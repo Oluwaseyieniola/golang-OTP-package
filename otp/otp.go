@@ -1,12 +1,16 @@
 package otp
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"math/big"
 	"sync"
 	"time"
+
+	"github.com/segmentio/kafka-go"
 )
 
 type OTP struct {
@@ -20,12 +24,18 @@ type OTPManager struct {
 	store    map[string]OTP
 	mu       sync.Mutex
 	Validity time.Duration
+	KafkaWriter  *kafka.Writer
 }
 
-func NewOtpManager(validityMinutes int) *OTPManager {
+func NewOtpManager(validityMinutes int, kafkaBroker, topic string) *OTPManager {
 	return &OTPManager{
 		store:    make(map[string]OTP),
 		Validity: time.Duration(validityMinutes) * time.Minute,
+		KafkaWriter: &kafka.Writer{
+			Addr: kafka.TCP(kafkaBroker),
+			Topic: topic,
+			Balancer: &kafka.LeastBytes{},
+		},
 	}
 }
 
@@ -56,6 +66,21 @@ func (manager *OTPManager) GenerateOTP(identifier string, otpType string, length
 		ExpiresAt:  time.Now().Add(manager.Validity),
 	}
 	manager.store[identifier] = NewOtp
+
+	go func(){
+		message:= fmt.Sprintf(`{"identifier": "%s" , "token": "%s" ,"type": "%s", "expiresAt": "%s"}`, NewOtp.Identifier, NewOtp.Token, NewOtp.Type, NewOtp.ExpiresAt, NewOtp.ExpiresAt.Format(time.RFC3339) )
+
+		err:= manager.KafkaWriter.WriteMessages(context.Background(), kafka.Message{
+			Key: []byte(NewOtp.Identifier),
+			Value: []byte(message),
+		})
+
+		if err != nil{
+			log.Printf("Failed to send OTP to Kafka: %v\n", err)
+		}else{
+			log.Printf("OTP sent successfully to Kafka\n", message)
+		}
+	}()
 
 	return NewOtp, nil
 }
@@ -118,3 +143,12 @@ func (manager *OTPManager) CleanExpiredOTP(identifier string) {
 	}
 
 }
+
+func(manager *OTPManager) Close(){
+	manager.KafkaWriter.Close()
+	log.Println("Kafka writer closed")
+}
+
+
+
+
