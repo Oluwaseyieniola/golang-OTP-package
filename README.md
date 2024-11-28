@@ -115,4 +115,6 @@ Feel free to contribute by creating issues or submitting pull requests to improv
 ## Contact
 For issues or feature requests, please contact oluwaseyiogunjinmi@gmail.com.
 
+## License
+[MIT License](LICENSE)
 
