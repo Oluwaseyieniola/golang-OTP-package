@@ -84,7 +84,7 @@ func (manager *OTPManager) GenerateOTP(identifier string, otpType string, length
 
 	return NewOtp, nil
 }
-
+// generate numeric tokens
 func generateNumericToken(length int) (string, error) {
 	var result string
 
@@ -98,7 +98,7 @@ func generateNumericToken(length int) (string, error) {
 	}
 	return result, nil
 }
-
+// generate alphanumeric tokens
 func generateAlphanumericToken(length int) (string, error) {
 	bytes := make([]byte, length)
 
