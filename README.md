@@ -38,9 +38,9 @@ fmt.Printf("Generated OTP: %s\n", otpResult.Token)
 ```
 
 ### Parameters:
-identifier: Unique user identifier (e.g., email or phone number).
-otpType: Type of OTP, either "numeric" or "alphanumeric".
-length: Length of the OTP (e.g., 6 for a six-digit OTP).
+- identifier: Unique user identifier (e.g., email or phone number).
+- otpType: Type of OTP, either "numeric" or "alphanumeric".
+- length: Length of the OTP (e.g., 6 for a six-digit OTP).
 
 ***Validate OTP***
 ```
