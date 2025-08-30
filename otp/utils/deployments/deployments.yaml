@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otp-service
+  labels:
+    app: otp-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: otp-service
+  template:
+    metadata:
+      labels:
+        app: otp-service
+    spec:
+      containers:
+        - name: app
+          image: <ECR_REGISTRY>/otp-service:<git-sha>
+          ports:
+            - containerPort: 8080
+            - containerPort: 9090
+          env:
+            - name: KAFKA_BROKERS
+              valueFrom:
+                secretKeyRef:
+                  name: otp-secrets
+                  key: kafka_brokers
+            - name: KAFKA_TOPIC
+              value: "otp-topic"
+            - name: OTP_VALID_MINUTES
+              value: "5"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otp-service
+spec:
+  selector:
+    app: otp-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+    - name: metrics
+      port: 9090
+      targetPort: 9090
+  type: ClusterIP
